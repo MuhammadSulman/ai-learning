@@ -12,7 +12,7 @@ class EmailController extends Controller
         private EmailGeneratorService $emailService
     ) {}
 
-    public function generate(GenerateEmailRequest $request)
+    public function generate(GenerateEmailRequest $request): \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\JsonResponse
     {
         $data = $request->validated();
 
