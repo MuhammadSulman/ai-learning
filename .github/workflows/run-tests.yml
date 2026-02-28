@@ -1,0 +1,109 @@
+# ============================================================================
+# WORKFLOW: Run Laravel Tests on Pull Request
+# FILE LOCATION: .github/workflows/run-tests.yml (in your repo root)
+# ============================================================================
+
+# 1. NAME - Display name shown in the Actions tab
+name: Run Tests
+
+# 2. TRIGGER - When should this workflow run?
+# This runs when a PR is opened, updated (synchronized), or reopened
+# targeting the main or develop branches
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+# 3. JOBS - The actual work to be done
+jobs:
+  laravel-tests:
+    # The virtual machine to run on (GitHub provides this for free)
+    runs-on: ubuntu-latest
+
+    # 4. SERVICES - External containers your app needs
+    # Think of these like docker-compose services
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: medlucy_test
+        ports:
+          - 3306:3306
+        # Health check: wait until MySQL is ready before running steps
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    # 5. STEPS - Sequential commands to execute
+    steps:
+      # Step 1: Clone your repo code into the runner
+      # "uses" means we're using a pre-built action from the Marketplace
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install PHP with extensions your Laravel app needs
+      - name: Setup PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, pdo, pdo_mysql, redis, xml, ctype, json, bcmath
+          coverage: none  # Set to 'xdebug' if you want code coverage reports
+
+      # Step 3: Cache Composer dependencies (speeds up future runs)
+      # First run: ~60s to install. Cached runs: ~5s
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      # Step 4: Install PHP dependencies
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      # Step 5: Prepare the environment file
+      # We copy .env.example and override values for CI
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # Step 6: Run database migrations
+      - name: Run migrations
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: medlucy_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+
+      # Step 7: Run the test suite
+      - name: Run tests
+        run: php artisan test
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: medlucy_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
