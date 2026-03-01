@@ -1,0 +1,55 @@
+# ============================================================================
+# WORKFLOW: Code Style Check with Laravel Pint
+# FILE LOCATION: .github/workflows/code-style.yml
+# ============================================================================
+
+name: Code Style
+
+on:
+  pull_request:
+    branches: [main, develop]
+    # NEW CONCEPT: path filters
+    # Only run when PHP files change — no point checking code style
+    # if someone only edited a README or .env.example
+    paths:
+      - '**.php'
+
+jobs:
+  pint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      # --test flag means: check only, don't fix anything
+      # Exit code 1 if files need formatting → workflow fails → PR shows ❌
+      - name: Check code style
+        run: vendor/bin/pint --test
+
+      # NEW CONCEPT: conditional step with if: failure()
+      # This step ONLY runs when the previous step fails
+      # It gives developers a helpful message instead of just a red X
+      - name: Style check failed
+        if: failure()
+        run: |
+          echo "❌ Code style issues found!"
+          echo ""
+          echo "Run 'vendor/bin/pint' locally to auto-fix, then commit the changes."

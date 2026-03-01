@@ -55,10 +55,10 @@ jobs:
         uses: actions/checkout@v4
 
       # Step 2: Install PHP with extensions your Laravel app needs
-      - name: Setup PHP 8.1
+      - name: Setup PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '8.4'
           extensions: mbstring, pdo, pdo_mysql, redis, xml, ctype, json, bcmath
           coverage: none  # Set to 'xdebug' if you want code coverage reports
 

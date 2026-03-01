@@ -49,7 +49,7 @@ class EmailGeneratorService
                 'completion_tokens' => $completionTokens,
                 'total_tokens' => $totalTokens,
             ],
-            'cost' => '$' . number_format($cost, 4),
+            'cost' => '$'.number_format($cost, 4),
             'model' => self::MODEL,
         ]);
     }
@@ -72,7 +72,7 @@ class EmailGeneratorService
 
                 if ($content !== '') {
                     $fullResponse .= $content;
-                    echo 'data: ' . json_encode(['chunk' => $content]) . "\n\n";
+                    echo 'data: '.json_encode(['chunk' => $content])."\n\n";
                     ob_flush();
                     flush();
                 }
@@ -97,15 +97,15 @@ class EmailGeneratorService
                         'streamed' => true,
                     ]);
 
-                    echo 'data: ' . json_encode([
+                    echo 'data: '.json_encode([
                         'done' => true,
                         'usage' => [
                             'prompt_tokens' => $promptTokens,
                             'completion_tokens' => $completionTokens,
                             'total_tokens' => $totalTokens,
                         ],
-                        'cost' => '$' . number_format($cost, 4),
-                    ]) . "\n\n";
+                        'cost' => '$'.number_format($cost, 4),
+                    ])."\n\n";
                     ob_flush();
                     flush();
                 }
